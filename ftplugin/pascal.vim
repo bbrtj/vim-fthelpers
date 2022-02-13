@@ -8,22 +8,8 @@ let s:class_capture = '^\s*\(\w\+\)' . s:class_pattern
 
 let s:implementation_pattern = '^implementation$'
 
-function! s:find_in_range(start, end, pattern)
-	let dir = a:start > a:end ? -1 : 1
-	let current = a:start
-
-	while current != a:end && current > 0
-		if getline(current) =~? a:pattern
-			return current
-		endif
-		let current += dir
-	endwhile
-
-	return 0
-endfunction
-
 function! s:find_class(start)
-	let linenum = s:find_in_range(a:start, 0, s:class_capture)
+	let linenum = fthelpers#find_in_range(a:start, 0, s:class_capture)
 	if linenum > 0
 		let matched = matchlist(getline(linenum), s:class_capture)
 		return matched[1]
@@ -33,11 +19,11 @@ function! s:find_class(start)
 endfunction
 
 function! s:find_declaration(type, class, function)
-	let implem = s:find_in_range(1, line('$'), s:implementation_pattern)
-	let class_line = s:find_in_range(1, implem, a:class . s:class_pattern)
+	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
+	let class_line = fthelpers#find_in_range(1, implem, a:class . s:class_pattern)
 
 	if class_line > 0
-		return s:find_in_range(class_line, implem, a:type . '\s\+' . a:function . '\W')
+		return fthelpers#find_in_range(class_line, implem, a:type . '\s\+' . a:function . '\W')
 	else
 		return 0
 	endif
@@ -45,10 +31,10 @@ endfunction
 
 function! s:find_definition(type, function)
 	let class = s:find_class(line('.'))
-	let implem = s:find_in_range(1, line('$'), s:implementation_pattern)
+	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
 
 	if strlen(class) > 0 && implem > 0
-		return s:find_in_range(implem, line('$'), a:type . '\s\+' . class . '\.' . a:function . '\W')
+		return fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . class . '\.' . a:function . '\W')
 	else
 		return 0
 	endif
@@ -86,9 +72,9 @@ function! AddDefinition()
 		let class = s:find_class(line('.'))
 
 		if found == 0 && strlen(class) > 0
-			let impl_end = s:find_in_range(line('$'), 1, '{ implementation end }')
+			let impl_end = fthelpers#find_in_range(line('$'), 1, '{ implementation end }')
 			if impl_end == 0
-				let endline = s:find_in_range(line('$'), 1, 'end\.')
+				let endline = fthelpers#find_in_range(line('$'), 1, 'end\.')
 
 				if endline > 0
 					call append(endline - 1, '')
