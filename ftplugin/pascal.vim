@@ -75,7 +75,7 @@ function! JumpDeclaration()
 			call cursor(s:find_definition(matched[1], matched[3], params), 0)
 		endif
 	else
-		echoe 'This line does not contain a pascal subroutine'
+		unsilent echo 'This line does not contain a pascal subroutine'
 	endif
 endfunction
 
@@ -98,7 +98,7 @@ function! AddDefinition()
 					call append(endline - 1, s:implementation_end)
 					let impl_end = endline
 				else
-					echoe "can't find the end of the unit"
+					unsilent echo "can't find the end of the unit"
 				endif
 			endif
 
@@ -108,7 +108,7 @@ function! AddDefinition()
 			call JumpDeclaration()
 		endif
 	else
-		echoe 'This line does not contain a pascal declaration'
+		unsilent echo 'This line does not contain a pascal declaration'
 	endif
 endfunction
 
