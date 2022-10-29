@@ -1,3 +1,3 @@
 " remove obstructive maps from sql buffers
-imapclear <buffer>
+autocmd BufEnter <buffer> imapclear <buffer>
 
