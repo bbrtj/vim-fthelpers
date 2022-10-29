@@ -22,14 +22,34 @@ function! s:find_class(start)
 	return ''
 endfunction
 
+function! s:find_depending_on_context(type, class, function, params)
+	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
+	if implem == 0
+		unsilent echo 'Could not find implementation. Is this file a pascal unit?'
+		return
+	endif
+
+	if line('.') > implem
+		return s:find_declaration(a:type, a:class, a:function, a:params)
+	else
+		return s:find_definition(a:type, a:function, a:params)
+	endif
+
+endfunction
+
 function! s:find_declaration(type, class, function, params)
 	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
-	let class_line = fthelpers#find_in_range(1, implem, a:class . s:class_pattern)
 
-	if class_line > 0
-		return fthelpers#find_in_range(class_line, implem, a:type . '\s\+' . a:function . a:params)
+	if strlen(a:class) > 0
+		let class_line = fthelpers#find_in_range(1, implem, a:class . s:class_pattern)
+
+		if class_line > 0
+			return fthelpers#find_in_range(class_line, implem, a:type . '\s\+' . a:function . a:params)
+		else
+			return 0
+		endif
 	else
-		return 0
+		return fthelpers#find_in_range(1, implem, a:type . '\s\+' . a:function . a:params)
 	endif
 endfunction
 
@@ -38,7 +58,11 @@ function! s:find_definition(type, function, params)
 	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
 
 	if strlen(class) > 0 && implem > 0
-		return fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . class . '\.' . a:function . a:params)
+		let found = fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . class . '\.' . a:function . a:params)
+		if found == 0
+			let found = fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . a:function . a:params)
+		endif
+		return found
 	else
 		return 0
 	endif
@@ -69,11 +93,7 @@ function! JumpDeclaration()
 	if len(matched) > 0
 		let params = s:get_essential_params(matched[4], '\W')
 
-		if strlen(matched[2]) > 0
-			call cursor(s:find_declaration(matched[1], matched[2], matched[3], params), 0)
-		else
-			call cursor(s:find_definition(matched[1], matched[3], params), 0)
-		endif
+		call cursor(s:find_depending_on_context(matched[1], matched[2], matched[3], params), 0)
 	else
 		unsilent echo 'This line does not contain a pascal subroutine'
 	endif
