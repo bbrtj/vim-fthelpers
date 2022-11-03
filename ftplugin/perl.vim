@@ -91,5 +91,6 @@ imap <buffer> &mmaf <c-g>uafter  => sub {<CR>};<Esc>O<Tab>&my$self, @args<Esc>k$
 imap <buffer> &mmbe <c-g>ubefore  => sub {<CR>};<Esc>O<Tab>&my$self, @args<Esc>k$F=hi
 
 noremap <silent> <buffer> = :silent call JumpSub()<CR>
+noremap <buffer> g= :!perlcritic --nocolor %<CR>
 noremap <silent> <buffer> <leader>wp :silent call ConvertParams()<CR>
 
