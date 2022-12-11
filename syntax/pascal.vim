@@ -2,6 +2,7 @@ syn keyword pascalDirective program unit
 syn keyword pascalDirective uses type
 syn keyword pascalDirective implementation interface initialization finalization
 syn keyword pascalSpecialize specialize
+syn keyword pascalPropertyRW read write
 
 syn keyword pascalIdentifier result Result self Self
 
@@ -13,8 +14,8 @@ syn match pascalFunctionDeclaration "\(function\|procedure\|constructor\|destruc
 syn match pascalMethodDeclaration "\(\(function\|procedure\|constructor\|destructor\)\s\+\w\+\.\)\@<=\w\+\(\s*(\)\@="
 
 hi link pascalDirective Define
-
 hi link pascalSpecialize Statement
+hi link pascalPropertyRW Statement
 
 hi link pascalIdentifier Identifier
 
