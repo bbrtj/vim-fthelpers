@@ -3,7 +3,7 @@ syn keyword pascalDirective uses type
 syn keyword pascalDirective implementation interface initialization finalization
 syn keyword pascalSpecialize specialize
 
-syn keyword pascalResult result
+syn keyword pascalIdentifier result Result self Self
 
 syn match pascalLocalVariable "\<[vV][A-Z]\w\+\>"
 syn match pascalClassVariable "\<[fF][A-Z]\w\+\>"
@@ -16,7 +16,7 @@ hi link pascalDirective Define
 
 hi link pascalSpecialize Statement
 
-hi link pascalResult Identifier
+hi link pascalIdentifier Identifier
 
 hi link pascalLocalVariable Identifier
 hi link pascalClassVariable Identifier
