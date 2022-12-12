@@ -132,8 +132,6 @@ function! AddDefinition()
 	endif
 endfunction
 
-let g:pascal_delphi=1
-
 inoremap <buffer> &beg <c-g>ubegin<CR>end;<Esc>
 inoremap <buffer> &pro <c-g>u<Esc>biprocedure <Esc>A();<Esc>$F)i
 inoremap <buffer> &fun <c-g>u<Esc>bifunction <Esc>A(): T;<Esc>$F)i
