@@ -13,8 +13,6 @@ syn keyword pascalIdentifier result Result self Self
 
 syn keyword pascalInterfaceType interface contained
 
-syn match pascalInterfaceDeclaration "\w\+\s\+=\s\+interface" contains=pascalInterfaceType
-
 syn match pascalLocalVariable "\<[vV][A-Z]\w\+\>"
 syn match pascalClassVariable "\<[fF][A-Z]\w\+\>"
 syn match pascalConstant "\<[cC][A-Z]\w\+\>"
@@ -23,6 +21,8 @@ syn match pascalCustomType "\<E[A-Z]\w*"
 syn match pascalCustomType "\<I[A-Z]\w*"
 syn match pascalFunctionDeclaration "\(function\|procedure\|constructor\|destructor\)\@<=\s\+\w\+\(\s*\((\|;\)\)\@="
 syn match pascalFunctionDeclaration "\(\(function\|procedure\|constructor\|destructor\)\s\+\w\+\.\)\@<=\w\+\(\s*\((\|;\)\)\@="
+
+syn match pascalInterfaceDeclaration "\w\+\s*=\s*interface" contains=pascalCustomType,pascalInterfaceType
 
 hi link pascalDirective Define
 hi link pascalStage Underlined
