@@ -1,4 +1,4 @@
-let s:sub_pattern = '\(procedure\|function\|constructor\|destructor\)\s\+'
+let s:sub_pattern = '\(class\s\+procedure\|class\s\+function\|procedure\|function\|constructor\|destructor\)\s\+'
 	\. '\%(\(\w\+\)\.\)\?'
 	\. '\(\w\+\)'
 	\. '\(.*\);'
