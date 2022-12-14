@@ -73,7 +73,6 @@ function! s:add_function(line, type, class, function, params)
 	call append(a:line - 1, 'end;')
 	call append(a:line - 1, 'begin')
 	call append(a:line - 1, a:type . ' ' . a:class . '.' . a:function . a:params . ';')
-	call append(a:line - 1, '{}')
 endfunction
 
 function! s:get_essential_params(arguments, default = '')
