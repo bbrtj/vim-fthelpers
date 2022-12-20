@@ -9,7 +9,9 @@ syn keyword pascalStage implementation interface initialization finalization
 syn keyword pascalSpecialize specialize
 syn keyword pascalPropertyRW read write
 
-syn keyword pascalIdentifier result Result self Self
+syn keyword pascalType NativeUInt NativeInt UInt8 Int8 UInt16 Int16 UInt32 Int32 UInt64 Int64 DWord QWord
+
+syn keyword pascalIdentifier result self
 
 syn keyword pascalInterfaceType interface contained
 
