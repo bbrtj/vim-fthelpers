@@ -137,8 +137,8 @@ inoremap <buffer> &fun <c-g>u<Esc>bifunction <Esc>A(): T;<Esc>$F)i
 inoremap <buffer> &con <c-g>uconstructor Create();<Esc>F)i
 inoremap <buffer> &des <c-g>udestructor Destroy; override;
 inoremap <buffer> &mode <c-g>u{$mode objfpc}{$H+}{$J-}
-inoremap <buffer> &cobra <c-g>u{$interfaces cobra}
-inoremap <buffer> &int <c-g>u = interface<Esc>:read!uuidgen<CR>I['{<Esc>A}']<CR>end;<Esc>
+inoremap <buffer> &corba <c-g>u{$interfaces corba}
+inoremap <buffer> &int <c-g>u = interface<Esc>:read!uuidgen<CR>I['{<Esc>A}']<Esc>kJr<CR>oend;<Esc>
 
 noremap <silent> <buffer> = :silent call JumpDeclaration()<CR>
 noremap <silent> <buffer> g= :silent call AddDefinition()<CR>
