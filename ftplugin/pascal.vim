@@ -6,7 +6,7 @@ let s:sub_pattern = '\(class\s\+procedure\|class\s\+function\|procedure\|functio
 let s:sub_params_pattern = '\(([^)]*)\)\?'
 	\. '\(:\s*\w\+\)\?'
 
-let s:class_pattern = '\s*=\s*class\([^;]\|$\)'
+let s:class_pattern = '\s*=\s*class[^;]*$'
 let s:class_capture = '^\s*\(\w\+\)' . s:class_pattern
 
 let s:begin = '^\s*begin'
