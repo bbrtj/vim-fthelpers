@@ -4,9 +4,9 @@ let s:sub_pattern = '\(class\s\+procedure\|class\s\+function\|procedure\|functio
 	\. '\(.*\);'
 
 let s:sub_params_pattern = '\(([^)]*)\)\?'
-	\. '\(:\s\+\w\+\)\?'
+	\. '\(:\s*\w\+\)\?'
 
-let s:class_pattern = '\s\+=\s\+class\([^;]\|$\)'
+let s:class_pattern = '\s*=\s*class\([^;]\|$\)'
 let s:class_capture = '^\s*\(\w\+\)' . s:class_pattern
 
 let s:begin = '^\s*begin'
@@ -18,6 +18,14 @@ let s:implementation_pattern = '^implementation$'
 function! s:find_class(start)
 	let linenum = fthelpers#find_in_range(a:start, 0, s:class_capture)
 	if linenum > 0
+		" check whether the class was closed
+		let end_linenum = fthelpers#find_in_range(linenum, a:start, s:end)
+		if end_linenum > 0
+			" the class we found was closed, so find another one
+			return s:find_class(linenum - 1)
+		endif
+
+		" not closed? good
 		let matched = matchlist(getline(linenum), s:class_capture)
 		return matched[1]
 	endif
@@ -73,7 +81,20 @@ function! s:find_declaration(type, class, function, params)
 			return 0
 		endif
 	else
-		return fthelpers#find_in_range(1, implem, a:type . '\s\+' . a:function . a:params)
+		let function_line = 1
+		while function_line > 0 && function_line < implem
+			let function_line = fthelpers#find_in_range(function_line, implem, a:type . '\s\+' . a:function . a:params)
+			if function_line > 0
+				let class_name = s:find_class(function_line)
+				if strlen(class_name) == 0
+					return function_line
+				endif
+
+				let function_line = function_line + 1
+			endif
+		endwhile
+
+		return 0
 	endif
 endfunction
 
@@ -81,12 +102,12 @@ function! s:find_definition(type, function, params)
 	let class = s:find_class(line('.'))
 	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
 
-	if strlen(class) > 0 && implem > 0
-		let found = fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . class . '\.' . a:function . a:params)
-		if found == 0
-			let found = fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . a:function . a:params)
+	if implem > 0
+		if strlen(class) > 0
+			return fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . class . '\.' . a:function . a:params)
+		else
+			return fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . a:function . a:params)
 		endif
-		return found
 	else
 		return 0
 	endif
@@ -96,7 +117,11 @@ function! s:add_function(line, type, class, function, params)
 	call append(a:line - 1, '')
 	call append(a:line - 1, 'end;')
 	call append(a:line - 1, 'begin')
-	call append(a:line - 1, a:type . ' ' . a:class . '.' . a:function . a:params . ';')
+	if strlen(a:class) > 0
+		call append(a:line - 1, a:type . ' ' . a:class . '.' . a:function . a:params . ';')
+	else
+		call append(a:line - 1, a:type . ' ' . a:function . a:params . ';')
+	endif
 endfunction
 
 function! s:get_essential_params(arguments, default = '')
@@ -131,8 +156,7 @@ function! AddDefinition()
 		let found = s:find_definition(matched[1], matched[3], params)
 		let class = s:find_class(line('.'))
 
-		if found == 0 && strlen(class) > 0
-			let impl_end = fthelpers#find_in_range(line('$'), 1, s:implementation_end)
+		if found == 0
 			let impl_end = s:find_implementation_end()
 			if impl_end == 0
 				unsilent echo "can't find the end of the unit"
