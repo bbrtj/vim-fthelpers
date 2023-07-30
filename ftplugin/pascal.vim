@@ -8,7 +8,10 @@ let s:sub_params_pattern = '\(([^)]*)\)\?'
 
 let s:class_pattern = '\s\+=\s\+class\([^;]\|$\)'
 let s:class_capture = '^\s*\(\w\+\)' . s:class_pattern
-let s:implementation_end = '{ implementation end }'
+
+let s:begin = '^\s*begin'
+let s:end = '^\s*end;'
+let s:implementation_end = '^\(initialization\|finalization\)$'
 
 let s:implementation_pattern = '^implementation$'
 
@@ -20,6 +23,27 @@ function! s:find_class(start)
 	endif
 
 	return ''
+endfunction
+
+function! s:find_implementation_end()
+	let endline = fthelpers#find_in_range(line('$'), 1, 'end\.')
+	let impl = fthelpers#find_in_range(endline, 1, s:implementation_pattern)
+	if endline > 0 && impl > 0
+		let end = fthelpers#find_in_range(impl, endline, s:implementation_end)
+		if end > 0
+			return end
+		else
+			let minor_end = fthelpers#find_in_range(endline, impl, s:end)
+			let begin = fthelpers#find_in_range(endline, impl, s:begin)
+			if begin > 0 && minor_end < begin
+				return begin
+			else
+				return endline
+			endif
+		endif
+	else
+		return 0
+	endif
 endfunction
 
 function! s:find_depending_on_context(type, class, function, params)
@@ -109,16 +133,9 @@ function! AddDefinition()
 
 		if found == 0 && strlen(class) > 0
 			let impl_end = fthelpers#find_in_range(line('$'), 1, s:implementation_end)
+			let impl_end = s:find_implementation_end()
 			if impl_end == 0
-				let endline = fthelpers#find_in_range(line('$'), 1, 'end\.')
-
-				if endline > 0
-					call append(endline - 1, '')
-					call append(endline - 1, s:implementation_end)
-					let impl_end = endline
-				else
-					unsilent echo "can't find the end of the unit"
-				endif
+				unsilent echo "can't find the end of the unit"
 			endif
 
 			call s:add_function(impl_end, matched[1], class, matched[3], s:get_essential_params(matched[4]))
