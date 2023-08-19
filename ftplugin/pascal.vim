@@ -141,7 +141,7 @@ function! JumpDeclaration()
 	if len(matched) > 0
 		let params = s:get_essential_params(matched[4], '\W')
 
-		call cursor(s:find_depending_on_context(matched[1], matched[2], matched[3], params), 0)
+		call fthelpers#jump(s:find_depending_on_context(matched[1], matched[2], matched[3], params))
 	else
 		unsilent echo 'This line does not contain a pascal subroutine'
 	endif
@@ -163,7 +163,7 @@ function! AddDefinition()
 			endif
 
 			call s:add_function(impl_end, matched[1], class, matched[3], s:get_essential_params(matched[4]))
-			call cursor(impl_end, 0)
+			call fthelpers#jump(impl_end)
 		else
 			call JumpDeclaration()
 		endif

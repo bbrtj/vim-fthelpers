@@ -1,3 +1,7 @@
+function! fthelpers#jump(to_line)
+	normal! m`
+	call cursor(a:to_line, 0)
+endfunction
 
 function! fthelpers#find_in_range(start, end, pattern)
 	let dir = a:start > a:end ? -1 : 1
