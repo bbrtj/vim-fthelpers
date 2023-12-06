@@ -15,7 +15,7 @@ syn keyword pascalIdentifier result self
 
 syn keyword pascalInterfaceType interface contained
 
-syn match pascalLocalVariable "\<[vV][A-Z]\w\+\>"
+syn match pascalLocalVariable "\<[vVlL][A-Z]\w\+\>"
 syn match pascalClassVariable "\<[fF][A-Z]\w\+\>"
 syn match pascalConstant "\<[cC][A-Z]\w\+\>"
 syn match pascalCustomType "\<T[A-Z]\w*"
