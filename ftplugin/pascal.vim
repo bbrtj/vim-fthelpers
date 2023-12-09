@@ -7,7 +7,7 @@ let s:sub_params_pattern = '\(([^)]*)\)\?'
 	\. '\(:\s*\w\+\)\?'
 
 let s:class_pattern = '\s*=\s*class[^;]*$'
-let s:class_capture = '^\s*\(\w\+\)' . s:class_pattern
+let s:class_capture = '^\s*\%\(generic\)\?\s\+\(\w\+\)\%\(<\w\+>\)\?' . s:class_pattern
 
 let s:begin = '^\s*begin'
 let s:end = '^\s*end;'
@@ -69,11 +69,15 @@ function! s:find_depending_on_context(type, class, function, params)
 
 endfunction
 
+function! s:build_class_pattern(class)
+	return a:class . '\%\(<\w\+>\)\?' . s:class_pattern
+endfunction
+
 function! s:find_declaration(type, class, function, params)
 	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
 
 	if strlen(a:class) > 0
-		let class_line = fthelpers#find_in_range(1, implem, a:class . s:class_pattern)
+		let class_line = fthelpers#find_in_range(1, implem, s:build_class_pattern(a:class))
 
 		if class_line > 0
 			return fthelpers#find_in_range(class_line, implem, a:type . '\s\+' . a:function . a:params)
