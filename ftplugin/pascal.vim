@@ -13,7 +13,8 @@ let s:begin = '^\s*begin'
 let s:end = '^\s*end;'
 let s:implementation_end = '^\(initialization\|finalization\)$'
 
-let s:implementation_pattern = '^implementation$'
+let s:implementation_pattern = '^\(implementation\|{\s*implementation\s*}\)$'
+let s:end_pattern = '^\(end\.\|{\s*implementation end\s*}\)$'
 
 function! s:find_class(start)
 	let linenum = fthelpers#find_in_range(a:start, 0, s:class_capture)
@@ -34,7 +35,7 @@ function! s:find_class(start)
 endfunction
 
 function! s:find_implementation_end()
-	let endline = fthelpers#find_in_range(line('$'), 1, 'end\.')
+	let endline = fthelpers#find_in_range(line('$'), 1, s:end_pattern)
 	let impl = fthelpers#find_in_range(endline, 1, s:implementation_pattern)
 	if endline > 0 && impl > 0
 		let end = fthelpers#find_in_range(impl, endline, s:implementation_end)
