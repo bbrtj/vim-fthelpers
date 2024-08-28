@@ -1,10 +1,16 @@
-let s:sub_pattern = '\(class\s\+procedure\|class\s\+function\|procedure\|function\|constructor\|destructor\)\s\+'
+let s:sub_pattern = '\(class\s\+procedure\|class\s\+function\|class\s\+operator\|procedure\|function\|operator\|constructor\|destructor\)\s\+'
 	\. '\%(\(\w\+\)\.\)\?'
-	\. '\(\w\+\)'
-	\. '\(.*\);'
+	\. '\(\w\+\|\S\)'
+	\. '\s*\(.*\)'
 
-let s:sub_params_pattern = '\(([^)]*)\)\?'
-	\. '\(:\s*\w\+\)\?'
+let s:sub_param_pattern = '^\s*\%(\(\w\+\)\s\+\)\?'
+	\. '\(\w\+\%(\s*,\s*\w\+\)*\)\s*'
+	\. ':\s*\(\w\+\)\s*'
+	\. '\%(=\s*\(.\+\)\)\?'
+	\. '\%(;\|$\)'
+
+let s:sub_params_pattern = '^\s*\%((\([^)]*\))\)\?'
+	\. '\%(\s*:\s*\(\w\+\)\)\?\s*;'
 
 let s:class_pattern = '\s*=\s*\(class\|record\)[^;]*$'
 let s:class_capture = '^\s*\%\(generic\)\?\s\+\(\w\+\)\%\(<\w\+>\)\?' . s:class_pattern
@@ -34,6 +40,130 @@ function! s:find_class(start)
 	return ''
 endfunction
 
+function! s:get_params(func_dict, params_str)
+	let last_param = 0
+
+	while 1
+		let matched = matchlist(a:params_str, s:sub_param_pattern, last_param)
+		if len(matched) == 0
+			break
+		endif
+
+		let last_param = last_param + strlen(matched[0])
+		let vars = split(matched[2], '\s*,\s*')
+		let param = {
+			\ "modifier": matched[1],
+			\ "vars": vars,
+			\ "type": matched[3],
+		\ }
+
+		let a:func_dict.params = add(a:func_dict.params, param)
+	endwhile
+
+	if last_param < strlen(a:params_str)
+		let a:func_dict.found = 0
+	end
+endfunction
+
+function! s:get_subroutine_at_line(linenum)
+	let max_lines = 5
+	let line = getline(a:linenum)
+
+	let matched = matchlist(line, s:sub_pattern)
+	if len(matched) > 0
+		let result = {
+			\ "found": 1,
+			\ "type": matched[1],
+			\ "class": matched[2],
+			\ "name": matched[3],
+			\ "params": [],
+			\ "result_type": '',
+		\ }
+
+		let line_count = 1
+		let params_part = matched[4]
+		while line_count <= max_lines
+			let params_matched = matchlist(params_part, s:sub_params_pattern)
+			if len(params_matched) > 0
+				let result.result_type = params_matched[2]
+				if strlen(params_matched[1]) > 0
+					call s:get_params(result, params_matched[1])
+				endif
+
+				return result
+			endif
+
+			let params_part = params_part . getline(a:linenum + line_count)
+			let line_count = line_count + 1
+		endwhile
+	else
+
+	return { "found": 0 }
+endfunction
+
+function! s:same_subroutine(sub1, sub2)
+	if a:sub1.found != a:sub2.found
+		return 0
+	endif
+
+	if a:sub1.found == 0
+		return 1
+	endif
+
+	return a:sub1 == a:sub2
+endfunction
+
+function! s:find_subroutine_in_range(start, end, func_def)
+	let current = a:start
+	while current != a:end
+		let res = s:get_subroutine_at_line(current)
+		if s:same_subroutine(a:func_def, res)
+			return current
+		endif
+
+		let current += 1
+	endwhile
+endfunction
+
+function! s:generate_function(func_dict)
+	if a:func_dict.found == 0
+		return ''
+	endif
+
+	let params = []
+	for param in a:func_dict.params
+		let modifier = ''
+		if strlen(param.modifier)
+			let modifier = param.modifier . ' '
+		endif
+
+		let params = add(params, modifier . join(param.vars, ', ') . ': ' . param.type)
+	endfor
+
+	let params = '(' . join(params, '; ') . ')'
+	if strlen(a:func_dict.result_type) > 0
+		let params = params . ': ' . a:func_dict.result_type
+	endif
+
+
+	if strlen(a:func_dict.class) > 0
+		return a:func_dict.type . ' ' . a:func_dict.class . '.' . a:func_dict.name . params . ';'
+	else
+		return a:func_dict.type . ' ' . a:func_dict.name . params . ';'
+	endif
+endfunction
+
+function! s:add_function(line, func_dict)
+	if a:func_dict.found == 0
+		return ''
+	endif
+
+	call append(a:line - 1, '')
+	call append(a:line - 1, 'end;')
+	call append(a:line - 1, 'begin')
+	call append(a:line - 1, s:generate_function(a:func_dict))
+endfunction
+
 function! s:find_implementation_end()
 	let endline = fthelpers#find_in_range(line('$'), 1, s:end_pattern)
 	let impl = fthelpers#find_in_range(endline, 1, s:implementation_pattern)
@@ -55,7 +185,7 @@ function! s:find_implementation_end()
 	endif
 endfunction
 
-function! s:find_depending_on_context(type, class, function, params)
+function! s:find_depending_on_context(func_def)
 	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
 	if implem == 0
 		unsilent echo 'Could not find implementation. Is this file a pascal unit?'
@@ -63,9 +193,9 @@ function! s:find_depending_on_context(type, class, function, params)
 	endif
 
 	if line('.') > implem
-		return s:find_declaration(a:type, a:class, a:function, a:params)
+		return s:find_declaration(a:func_def)
 	else
-		return s:find_definition(a:type, a:function, a:params)
+		return s:find_definition(a:func_def)
 	endif
 
 endfunction
@@ -74,21 +204,23 @@ function! s:build_class_pattern(class)
 	return a:class . '\%\(<\w\+>\)\?' . s:class_pattern
 endfunction
 
-function! s:find_declaration(type, class, function, params)
+function! s:find_declaration(func_def)
 	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
 
-	if strlen(a:class) > 0
-		let class_line = fthelpers#find_in_range(1, implem, s:build_class_pattern(a:class))
+	if strlen(a:func_def.class) > 0
+		let class_line = fthelpers#find_in_range(1, implem, s:build_class_pattern(a:func_def.class))
 
 		if class_line > 0
-			return fthelpers#find_in_range(class_line, implem, a:type . '\s\+' . a:function . a:params)
+			let func_def_copy = copy(a:func_def)
+			let func_def_copy.class = ''
+			return s:find_subroutine_in_range(class_line, implem, func_def_copy)
 		else
 			return 0
 		endif
 	else
 		let function_line = 1
 		while function_line > 0 && function_line < implem
-			let function_line = fthelpers#find_in_range(function_line, implem, a:type . '\s\+' . a:function . a:params)
+			let function_line = s:find_subroutine_in_range(function_line, implem, a:func_def)
 			if function_line > 0
 				let class_name = s:find_class(function_line)
 				if strlen(class_name) == 0
@@ -103,63 +235,37 @@ function! s:find_declaration(type, class, function, params)
 	endif
 endfunction
 
-function! s:find_definition(type, function, params)
+function! s:find_definition(func_def)
 	let class = s:find_class(line('.'))
 	let implem = fthelpers#find_in_range(1, line('$'), s:implementation_pattern)
 
 	if implem > 0
-		if strlen(class) > 0
-			return fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . class . '\.' . a:function . a:params)
-		else
-			return fthelpers#find_in_range(implem, line('$'), a:type . '\s\+' . a:function . a:params)
-		endif
+		let func_def_copy = copy(a:func_def)
+		let func_def_copy.class = class
+		return s:find_subroutine_in_range(implem, line('$'), func_def_copy)
 	else
 		return 0
 	endif
 endfunction
 
-function! s:add_function(line, type, class, function, params)
-	call append(a:line - 1, '')
-	call append(a:line - 1, 'end;')
-	call append(a:line - 1, 'begin')
-	if strlen(a:class) > 0
-		call append(a:line - 1, a:type . ' ' . a:class . '.' . a:function . a:params . ';')
-	else
-		call append(a:line - 1, a:type . ' ' . a:function . a:params . ';')
-	endif
-endfunction
-
-function! s:get_essential_params(arguments, default = '')
-	let matched = matchlist(a:arguments, s:sub_params_pattern)
-
-	if len(matched) > 0
-		return matched[0]
-	else
-		return a:default
-	endif
-endfunction
-
 function! JumpDeclaration()
-	let line = getline('.')
+	let line = line('.')
 
-	let matched = matchlist(line, s:sub_pattern)
-	if len(matched) > 0
-		let params = s:get_essential_params(matched[4], '\W')
-
-		call fthelpers#jump(s:find_depending_on_context(matched[1], matched[2], matched[3], params))
+	let func_def = s:get_subroutine_at_line(line)
+	if func_def.found == 1
+		call fthelpers#jump(s:find_depending_on_context(func_def))
 	else
 		unsilent echo 'This line does not contain a pascal subroutine'
 	endif
 endfunction
 
 function! AddDefinition()
-	let line = getline('.')
+	let line = line('.')
 
-	let matched = matchlist(line, s:sub_pattern)
-	if len(matched) > 0 && strlen(matched[2]) == 0
-		let params = s:get_essential_params(matched[4], '\W')
-		let found = s:find_definition(matched[1], matched[3], params)
-		let class = s:find_class(line('.'))
+	let func_def = s:get_subroutine_at_line(line)
+	if func_def.found == 1 && strlen(func_def.class) == 0
+		let found = s:find_definition(func_def)
+		let func_def.class = s:find_class(line)
 
 		if found == 0
 			let impl_end = s:find_implementation_end()
@@ -167,7 +273,7 @@ function! AddDefinition()
 				unsilent echo "can't find the end of the unit"
 			endif
 
-			call s:add_function(impl_end, matched[1], class, matched[3], s:get_essential_params(matched[4]))
+			call s:add_function(impl_end, func_def)
 			call fthelpers#jump(impl_end)
 		else
 			call JumpDeclaration()
