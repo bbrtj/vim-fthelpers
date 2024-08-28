@@ -284,10 +284,11 @@ function! AddDefinition()
 endfunction
 
 inoremap <buffer> &beg <c-g>ubegin<CR>end;<Esc>
-inoremap <buffer> &pro <c-g>u<Esc>biprocedure <Esc>A();<Esc>$F)i
+inoremap <buffer> &proc <c-g>u<Esc>biprocedure <Esc>A();<Esc>$F)i
 inoremap <buffer> &fun <c-g>u<Esc>bifunction <Esc>A(): T;<Esc>$F)i
 inoremap <buffer> &con <c-g>uconstructor Create();<Esc>F)i
 inoremap <buffer> &des <c-g>udestructor Destroy; override;
+inoremap <buffer> &prop <c-g>u<Esc>b"hyeiproperty <Esc>A:  read F<C-r>h write F<C-r>h;<Esc>$T:a
 inoremap <buffer> &mode <c-g>u{$mode objfpc}{$H+}{$J-}
 inoremap <buffer> &corba <c-g>u{$interfaces corba}
 inoremap <buffer> &int <c-g>u = interface<Esc>:read!uuidgen<CR>I['{<Esc>A}']<Esc>kJr<CR>oend;<Esc>
