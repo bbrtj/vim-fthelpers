@@ -15,6 +15,10 @@ let s:sub_params_pattern = '^\s*\%((\([^)]*\))\)\?'
 let s:class_pattern = '\s*=\s*\(class\|record\)[^;]*$'
 let s:class_capture = '^\s*\%\(generic\)\?\s\+\(\w\+\)\%\(<\w\+>\)\?' . s:class_pattern
 
+let s:if_pattern = '^\(\s*\%(else\s\+\)\?\)if\s\+\(.\+\)\s\+then\s*\(.*\)'
+let s:comparison_pattern = '^\(.\{-}\)\s*\(>=\|<=\|<>\|>\|<\|=\|\<is\>\|\<in\>\)\s*\(.\+\)$'
+let s:logical_operator_pattern = '\s*\<\(and\|or\|xor\)\>\s*'
+
 let s:begin = '^\s*begin'
 let s:end = '^\s*end;'
 let s:implementation_end = '^\(initialization\|finalization\)$'
@@ -248,7 +252,19 @@ function! s:find_definition(func_def)
 	endif
 endfunction
 
-function! JumpDeclaration()
+function! s:is_embraced(str)
+	let openings = strlen(substitute(a:str, '[^(]', '', 'g'))
+	let closings = strlen(substitute(a:str, '[^)]', '', 'g'))
+	let starting_openings = match(a:str, '[^(]')
+	let ending_closings = strlen(a:str) - match(a:str, '[^)])*$') - 1
+	let middle_openings = openings - starting_openings
+	let middle_closings = closings - ending_closings
+
+	return ending_closings - middle_openings + middle_closings > 0
+		\ && starting_openings - middle_closings + middle_openings > 0
+endfunction
+
+function! PascalJumpDeclaration()
 	let line = line('.')
 
 	let func_def = s:get_subroutine_at_line(line)
@@ -259,7 +275,7 @@ function! JumpDeclaration()
 	endif
 endfunction
 
-function! AddDefinition()
+function! PascalAddDefinition()
 	let line = line('.')
 
 	let func_def = s:get_subroutine_at_line(line)
@@ -276,10 +292,62 @@ function! AddDefinition()
 			call s:add_function(impl_end, func_def)
 			call fthelpers#jump(impl_end)
 		else
-			call JumpDeclaration()
+			call PascalJumpDeclaration()
 		endif
+
+		return 1
 	else
-		unsilent echo 'This line does not contain a pascal declaration'
+		return 0
+	endif
+endfunction
+
+function! PascalFixIf()
+	let oldline = getline('.')
+	let matched = matchlist(oldline, s:if_pattern)
+	if len(matched) > 0
+		let parts = split(matched[2], s:logical_operator_pattern . '\zs')
+		let needs_embracing = len(parts) > 1
+		let result = ''
+		for part in parts
+			let matched_operator = matchlist(part, s:logical_operator_pattern)
+			if len(matched_operator) > 0
+				let part = substitute(part, matched_operator[0], '', '')
+				let matched_operator = ' ' . matched_operator[1] . ' '
+			else
+				let matched_operator = ''
+			endif
+
+			let matched_comparison = matchlist(part, s:comparison_pattern)
+			if len(matched_comparison) > 0
+				let part = matched_comparison[1] . ' ' . matched_comparison[2] . ' ' . matched_comparison[3]
+				if !s:is_embraced(part) && needs_embracing
+					let part = '(' . part . ')'
+				endif
+			elseif s:is_embraced(part)
+				let part = part[1:strlen(part) - 2]
+			endif
+
+			let result = result . part . matched_operator
+		endfor
+
+		let newline = matched[1] . 'if ' . result . ' then ' . matched[3]
+		if newline != oldline
+			call setline('.', newline)
+		endif
+
+		return 1
+	else
+		return 0
+	endif
+endfunction
+
+function! PascalComplete()
+	let status = 0
+	let status = status || PascalAddDefinition()
+	let status = status || PascalFixIf()
+
+	if !status
+		unsilent echo "nothing to do"
 	endif
 endfunction
 
@@ -293,6 +361,6 @@ inoremap <buffer> &mode <c-g>u{$mode objfpc}{$H+}{$J-}
 inoremap <buffer> &corba <c-g>u{$interfaces corba}
 inoremap <buffer> &int <c-g>u = interface<Esc>:read!uuidgen<CR>I['{<Esc>A}']<Esc>kJr<CR>oend;<Esc>
 
-noremap <silent> <buffer> = :silent call JumpDeclaration()<CR>
-noremap <silent> <buffer> g= :silent call AddDefinition()<CR>
+noremap <silent> <buffer> = :silent call PascalJumpDeclaration()<CR>
+noremap <silent> <buffer> g= :silent call PascalComplete()<CR>
 
