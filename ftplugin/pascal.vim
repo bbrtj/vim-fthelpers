@@ -1,4 +1,4 @@
-let s:sub_pattern = '\(class\s\+procedure\|class\s\+function\|class\s\+operator\|procedure\|function\|operator\|constructor\|destructor\)\s\+'
+let s:sub_pattern = '\(\%(class\s\+\)\?\%(procedure\|function\|operator\|constructor\|destructor\)\)\s\+'
 	\. '\%(\(\w\+\)\.\)\?'
 	\. '\(\w\+\|\S\)'
 	\. '\s*\(.*\)'
@@ -100,7 +100,7 @@ function! s:get_subroutine_at_line(linenum)
 			let params_part = params_part . getline(a:linenum + line_count)
 			let line_count = line_count + 1
 		endwhile
-	else
+	endif
 
 	return { "found": 0 }
 endfunction
