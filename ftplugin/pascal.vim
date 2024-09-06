@@ -6,7 +6,7 @@ let s:sub_pattern = '\(\%(class\s\+\)\?\%(procedure\|function\|operator\|constru
 let s:sub_param_pattern = '^\s*\%(\(\w\+\)\s\+\)\?'
 	\. '\(\w\+\%(\s*,\s*\w\+\)*\)\s*'
 	\. ':\s*\(\w\+\)\s*'
-	\. '\%(=\s*\(.\+\)\)\?'
+	\. '\%(=\s*\([^;]\+\)\)\?'
 	\. '\%(;\|$\)'
 
 let s:sub_params_pattern = '^\s*\%((\([^)]*\))\)\?'
