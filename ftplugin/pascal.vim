@@ -12,8 +12,9 @@ let s:sub_param_pattern = '^\s*\%(\(\w\+\)\s\+\)\?'
 let s:sub_params_pattern = '^\s*\%((\([^)]*\))\)\?'
 	\. '\%(\s*:\s*\(\w\+\)\)\?\s*;'
 
+let s:generics_pattern = '\%\(<[^>]\+>\)\?'
 let s:class_pattern = '\s*=\s*\(class\|record\)[^;]*$'
-let s:class_capture = '^\s*\%\(generic\)\?\s\+\(\w\+\)\%\(<\w\+>\)\?' . s:class_pattern
+let s:class_capture = '^\s*\%\(generic\)\?\s\+\(\w\+\)' . s:generics_pattern . s:class_pattern
 
 let s:if_pattern = '^\(\s*\%(else\s\+\)\?\)if\s\+\(.\+\)\s\+then\s*\(.*\)'
 let s:comparison_pattern = '^\(.\{-}\)\s*\(>=\|<=\|<>\|>\|<\|=\|\<is\>\|\<in\>\)\s*\(.\+\)$'
@@ -205,7 +206,7 @@ function! s:find_depending_on_context(func_def)
 endfunction
 
 function! s:build_class_pattern(class)
-	return a:class . '\%\(<\w\+>\)\?' . s:class_pattern
+	return a:class . s:generics_pattern . s:class_pattern
 endfunction
 
 function! s:find_declaration(func_def)
